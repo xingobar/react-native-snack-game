@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, View, Dimensions, TouchableOpacity, Text } from 'react-native';
+import { StyleSheet, View, Dimensions, TouchableOpacity, Text, PanResponder, Alert } from 'react-native';
 import { GameLoop } from 'react-native-game-engine';
 
 const { width: WIDTH, height: HEIGHT } = Dimensions.get('window');
@@ -13,14 +13,6 @@ class Game extends Component {
 				{
 					x: 50,
 					y: 50
-				},
-				{
-					x: 75,
-					y: 50
-				},
-				{
-					x: 100,
-					y: 50
 				}
 			],
 			deltaX: 0.9,
@@ -30,10 +22,49 @@ class Game extends Component {
 			direction: 'right',
 			newX: 0,
 			newY: 0,
-			isShow: false
+			isShow: false,
+			isShowAlert: false
 		};
 
 		this.updateHandler = this.updateHandler.bind(this);
+	}
+
+	componentWillMount() {
+		this._panResponder = PanResponder.create({
+			// Ask to be the responder:
+			onStartShouldSetPanResponder: (evt, gestureState) => true,
+			onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
+			onMoveShouldSetPanResponder: (evt, gestureState) => true,
+			onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
+
+			onPanResponderRelease: (evt, gestureState) => {
+				let { x0, y0, vx, vy, dx, dy } = gestureState;
+
+				if (Math.abs(dx) >= 100) {
+					if (dx > 100) {
+						this.setState({ direction: 'right' });
+					}
+
+					if (dx <= -100) {
+						this.setState({
+							direction: 'left'
+						});
+					}
+				} else if (Math.abs(dy) >= 100) {
+					if (dy > 100) {
+						this.setState({
+							direction: 'down'
+						});
+					}
+
+					if (dy <= -100) {
+						this.setState({
+							direction: 'top'
+						});
+					}
+				}
+			}
+		});
 	}
 
 	updateHandler() {
@@ -41,11 +72,13 @@ class Game extends Component {
 
 		if (!moveInterval) {
 			moveInterval = setInterval(() => {
-				_this._move();
-			}, 300);
+				if (!_this.state.isShowAlert) {
+					_this._move();
+				}
+			}, 150);
 		}
 
-		//_this._checkBorder();
+		_this._checkBorder();
 
 		if (!_this.state.isShow) {
 			_this._randomGenerate();
@@ -56,55 +89,149 @@ class Game extends Component {
 		let _this = this;
 		if (_this.state.data[0].x === _this.state.newX && _this.state.data[0].y === _this.state.newY) {
 			let tail = _this.state.data[_this.state.data.length - 1];
+			let lastSecond;
+			let isLengthGreaterTwo = false;
+			if (_this.state.data.length > 2) {
+				lastSecond = _this.state.data[_this.state.data.length - 2];
+				isLengthGreaterTwo = true;
+			}
+
+			let isVertical = false;
+			let isHorizontal = false;
+			let isTailYAxisGreater = false;
+			let isTailXAxisGreater = false;
+
+			if (lastSecond) {
+				if (tail.x - lastSecond.x === 0) {
+					isHorizontal = true;
+				}
+
+				if (tail.y - lastSecond.y === 0) {
+					isVertical = true;
+				}
+
+				if (tail.x > lastSecond.x) {
+					isTailXAxisGreater = true;
+				}
+
+				if (tail.y > lastSecond.y) {
+					isTailYAxisGreater = true;
+				}
+			}
 
 			switch (_this.state.direction) {
 				case 'top':
-					_this.setState({
-						data: [
-							..._this.state.data,
-							{
-								x: tail.x,
-								y: tail.y + _this.state.height
-							}
-						],
-						isShow: false
-					});
+					if (!isLengthGreaterTwo || isVertical) {
+						_this.setState({
+							data: [
+								..._this.state.data,
+								{
+									x: tail.x,
+									y: tail.y + _this.state.height
+								}
+							],
+							isShow: false
+						});
+					}
 					break;
 				case 'down':
-					_this.setState({
-						data: [
-							..._this.state.data,
-							{
-								x: tail.x,
-								y: tail.y - _this.state.height
-							}
-						],
-						isShow: false
-					});
+					if (!isLengthGreaterTwo || isVertical) {
+						_this.setState({
+							data: [
+								..._this.state.data,
+								{
+									x: tail.x,
+									y: tail.y - _this.state.height
+								}
+							],
+							isShow: false
+						});
+					}
+
 					break;
 				case 'left':
-					_this.setState({
-						data: [
-							..._this.state.data,
-							{
-								x: tail.x + _this.state.width,
-								y: tail.y
-							}
-						],
-						isShow: false
-					});
+					if (!isLengthGreaterTwo || isHorizontal) {
+						_this.setState({
+							data: [
+								..._this.state.data,
+								{
+									x: tail.x + _this.state.width,
+									y: tail.y
+								}
+							],
+							isShow: false
+						});
+					}
+
 					break;
 				case 'right':
-					_this.setState({
-						data: [
-							..._this.state.data,
-							{
-								x: tail.x - _this.state.width,
-								y: tail.y
-							}
-						],
-						isShow: false
-					});
+					if (!isLengthGreaterTwo || isHorizontal) {
+						_this.setState({
+							data: [
+								..._this.state.data,
+								{
+									x: tail.x - _this.state.width,
+									y: tail.y
+								}
+							],
+							isShow: false
+						});
+					}
+					break;
+			}
+
+			switch (_this.state.direction) {
+				case 'top':
+				case 'down':
+					if (isHorizontal) {
+						if (isTailXAxisGreater) {
+							_this.setState({
+								data: [
+									..._this.state.data,
+									{
+										x: tail.x + _this.state.width,
+										y: tail.y
+									}
+								]
+							});
+						} else {
+							_this.setState({
+								data: [
+									..._this.state.data,
+									{
+										x: tail.x - _this.state.width,
+										y: tail.y
+									}
+								]
+							});
+						}
+					}
+					break;
+				case 'right':
+				case 'left':
+					if (isVertical) {
+						if (isTailYAxisGreater) {
+							_this.setState({
+								data: [
+									..._this.state.data,
+									{
+										x: tail.x,
+										y: tail.y + _this.state.height
+									}
+								]
+							});
+						} else {
+							_this.setState({
+								data: [
+									..._this.state.data,
+									{
+										x: tail.x,
+										y: tail.y - _this.state.height
+									}
+								]
+							});
+						}
+					}
 					break;
 			}
 		}
@@ -167,44 +294,42 @@ class Game extends Component {
 	_checkBorder() {
 		let _this = this;
 
-		if (_this.state.data[0].x >= WIDTH) {
+		if (
+			_this.state.data[0].x >= WIDTH ||
+			_this.state.data[0].x <= 0 ||
+			_this.state.data[0].y >= HEIGHT ||
+			_this.state.data[0].y <= 0
+		) {
 			_this.setState({
 				data: [
 					{
-						x: 0,
-						y: _this.state.data[0].y
+						x: 50,
+						y: 50
 					}
 				]
 			});
-		} else if (_this.state.data[0].x <= 0) {
-			_this.setState({
-				data: [
-					{
-						x: WIDTH,
-						y: _this.state.data[0].y
-					}
-				]
-			});
-		}
 
-		if (_this.state.data[0].y >= HEIGHT) {
-			_this.setState({
-				data: [
-					{
-						x: _this.state.data[0].x,
-						y: 0
-					}
-				]
-			});
-		} else if (_this.state.data[0].y <= 0) {
-			_this.setState({
-				data: [
-					{
-						x: _this.state.data[0].x,
-						y: HEIGHT
-					}
-				]
-			});
+			if (!_this.state.isShowAlert) {
+				_this.setState({
+					isShowAlert: true
+				});
+
+				Alert.alert(
+					'Game Over',
+					'',
+					[
+						{
+							text: 'OK',
+							onPress: () => {
+								_this.setState({
+									isShowAlert: false
+								});
+							}
+						}
+					],
+					{ cancelable: false }
+				);
+			}
 		}
 	}
 
@@ -218,16 +343,19 @@ class Game extends Component {
 
 			let x = Math.floor(Math.random() * Math.floor(maxX));
 			let y = Math.floor(Math.random() * Math.floor(maxY));
-
 			let positionX = x * _this.state.width;
 			let positionY = y * _this.state.height;
 
+			while (_this.state.data.indexOf(positionX) !== -1 && _this.state.data.indexOf(positionY) !== -1) {
+				x = Math.floor(Math.random() * Math.floor(maxX));
+				y = Math.floor(Math.random() * Math.floor(maxY));
+				positionX = x * _this.state.width;
+				positionY = y * _this.state.height;
+			}
+
 			this.setState({
 				newX: positionX,
-				newY: positionY
-			});
-
-			_this.setState({
+				newY: positionY,
 				isShow: true
 			});
 		}
@@ -235,30 +363,14 @@ class Game extends Component {
 
 	render() {
 		return (
-			<GameLoop style={{ flex: 1, position: 'relative' }} onUpdate={this.updateHandler}>
-				{this.state.data.map((value, index) => {
-					return <View style={[ styles.square, { left: value.x, top: value.y } ]} key={index} />;
-				})}
-
-				<View style={[ styles.square, { left: this.state.newX, top: this.state.newY } ]} />
-
-				<TouchableOpacity
-					style={[ styles.triangle, { left: WIDTH - 100, top: HEIGHT - 150 } ]}
-					onPress={() => this.setState({ direction: 'top' })}
-				/>
-				<TouchableOpacity
-					style={[ styles.triangle, styles.leftTriangle, { left: WIDTH - 150, top: HEIGHT - 100 } ]}
-					onPress={() => this.setState({ direction: 'left' })}
-				/>
-				<TouchableOpacity
-					style={[ styles.triangle, styles.rightTriangle, { left: WIDTH - 50, top: HEIGHT - 100 } ]}
-					onPress={() => this.setState({ direction: 'right' })}
-				/>
-				<TouchableOpacity
-					style={[ styles.triangle, styles.downTriangle, { left: WIDTH - 100, top: HEIGHT - 50 } ]}
-					onPress={() => this.setState({ direction: 'down' })}
-				/>
-			</GameLoop>
+			<View {...this._panResponder.panHandlers} style={{ flex: 1, position: 'relative' }}>
+				<GameLoop style={{ flex: 1, position: 'relative' }} onUpdate={this.updateHandler}>
+					{this.state.data.map((value, index) => {
+						return <View style={[ styles.square, { left: value.x, top: value.y } ]} key={index} />;
+					})}
+					<View style={[ styles.square, { left: this.state.newX, top: this.state.newY } ]} />
+				</GameLoop>
+			</View>
 		);
 	}
 }
@@ -269,44 +381,6 @@ const styles = StyleSheet.create({
 		height: 25,
 		backgroundColor: 'red',
 		position: 'absolute'
-	},
-
-	triangle: {
-		width: 0,
-		height: 0,
-		backgroundColor: 'transparent',
-		borderStyle: 'solid',
-		borderLeftWidth: 25,
-		borderRightWidth: 25,
-		borderBottomWidth: 50,
-		borderLeftColor: 'transparent',
-		borderRightColor: 'transparent',
-		borderBottomColor: 'red',
-		position: 'absolute'
-	},
-
-	leftTriangle: {
-		transform: [
-			{
-				rotate: '-90deg'
-			}
-		]
-	},
-
-	rightTriangle: {
-		transform: [
-			{
-				rotate: '90deg'
-			}
-		]
-	},
-
-	downTriangle: {
-		transform: [
-			{
-				rotate: '180deg'
-			}
-		]
 	}
 });
 
