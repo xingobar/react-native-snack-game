@@ -39,26 +39,27 @@ class Game extends Component {
 
 			onPanResponderRelease: (evt, gestureState) => {
 				let { x0, y0, vx, vy, dx, dy } = gestureState;
+				let _this = this;
 
 				if (Math.abs(dx) >= 100) {
 					if (dx > 100) {
-						this.setState({ direction: 'right' });
+						_this.setState({ direction: 'right' });
 					}
 
 					if (dx <= -100) {
-						this.setState({
+						_this.setState({
 							direction: 'left'
 						});
 					}
 				} else if (Math.abs(dy) >= 100) {
 					if (dy > 100) {
-						this.setState({
+						_this.setState({
 							direction: 'down'
 						});
 					}
 
 					if (dy <= -100) {
-						this.setState({
+						_this.setState({
 							direction: 'top'
 						});
 					}
@@ -75,10 +76,8 @@ class Game extends Component {
 				if (!_this.state.isShowAlert) {
 					_this._move();
 				}
-			}, 150);
+			}, 180);
 		}
-
-		_this._checkBorder();
 
 		if (!_this.state.isShow) {
 			_this._randomGenerate();
@@ -288,48 +287,70 @@ class Game extends Component {
 		});
 
 		_this._eat();
+		_this._collision();
 	}
 
-	// 檢查是否碰到邊界
-	_checkBorder() {
+	//是否碰撞
+	_collision() {
 		let _this = this;
+		let first;
+		let current;
+
+		if (_this.state.data.length >= 2) {
+			first = _this.state.data[0];
+		}
+
+		for (let i = 1; i < _this.state.data.length; i++) {
+			current = _this.state.data[i];
+			if (first.x === current.x && current.y === first.y) {
+				_this._die();
+				break;
+			}
+		}
 
 		if (
-			_this.state.data[0].x >= WIDTH ||
-			_this.state.data[0].x <= 0 ||
-			_this.state.data[0].y >= HEIGHT ||
-			_this.state.data[0].y <= 0
+			_this.state.data[0].x > WIDTH ||
+			_this.state.data[0].x < 0 ||
+			_this.state.data[0].y > HEIGHT ||
+			_this.state.data[0].y < 0
 		) {
+			_this._die();
+		}
+	}
+
+	//死掉時的彈窗以及初始化
+	_die() {
+		let _this = this;
+		_this.setState({
+			data: [
+				{
+					x: 50,
+					y: 50
+				}
+			]
+		});
+
+		if (!_this.state.isShowAlert) {
 			_this.setState({
-				data: [
-					{
-						x: 50,
-						y: 50
-					}
-				]
+				isShowAlert: true,
+				direction: 'right'
 			});
 
-			if (!_this.state.isShowAlert) {
-				_this.setState({
-					isShowAlert: true
-				});
-
-				Alert.alert(
-					'Game Over',
-					'',
-					[
-						{
-							text: 'OK',
-							onPress: () => {
-								_this.setState({
-									isShowAlert: false
-								});
-							}
+			Alert.alert(
+				'Game Over',
+				'',
+				[
+					{
+						text: 'OK',
+						onPress: () => {
+							_this.setState({
+								isShowAlert: false
+							});
 						}
-					],
-					{ cancelable: false }
-				);
-			}
+					}
+				],
+				{ cancelable: false }
+			);
 		}
 	}
 
@@ -338,8 +359,8 @@ class Game extends Component {
 		let _this = this;
 
 		if (!_this.state.isShow) {
-			let maxX = Math.ceil(WIDTH / _this.state.width);
-			let maxY = Math.ceil(HEIGHT / _this.state.height);
+			let maxX = Math.floor(WIDTH / _this.state.width);
+			let maxY = Math.floor(HEIGHT / _this.state.height);
 
 			let x = Math.floor(Math.random() * Math.floor(maxX));
 			let y = Math.floor(Math.random() * Math.floor(maxY));
