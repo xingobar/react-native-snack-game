@@ -76,7 +76,7 @@ class Game extends Component {
 				if (!_this.state.isShowAlert) {
 					_this._move();
 				}
-			}, 180);
+			}, 150);
 		}
 
 		if (!_this.state.isShow) {
@@ -88,93 +88,63 @@ class Game extends Component {
 		let _this = this;
 		if (_this.state.data[0].x === _this.state.newX && _this.state.data[0].y === _this.state.newY) {
 			let tail = _this.state.data[_this.state.data.length - 1];
-			let lastSecond;
-			let isLengthGreaterTwo = false;
-			if (_this.state.data.length > 2) {
-				lastSecond = _this.state.data[_this.state.data.length - 2];
-				isLengthGreaterTwo = true;
-			}
+			let head = _this.state.data[0];
+
+			_this.setState({
+				isShow: false
+			});
 
 			let isVertical = false;
 			let isHorizontal = false;
-			let isTailYAxisGreater = false;
-			let isTailXAxisGreater = false;
+			let isGreaterThree = false;
+			let lastSecond;
 
-			if (lastSecond) {
-				if (tail.x - lastSecond.x === 0) {
-					isHorizontal = true;
-				}
+			if (_this.state.data.length >= 3) {
+				isGreaterThree = true;
+				lastSecond = _this.state.data[_this.state.data.length - 2];
 
-				if (tail.y - lastSecond.y === 0) {
+				if (lastSecond.x - tail.x === 0) {
 					isVertical = true;
 				}
 
-				if (tail.x > lastSecond.x) {
-					isTailXAxisGreater = true;
-				}
-
-				if (tail.y > lastSecond.y) {
-					isTailYAxisGreater = true;
+				if (lastSecond.y - tail.y === 0) {
+					isHorizontal = true;
 				}
 			}
 
+			let foodTail = {};
+
 			switch (_this.state.direction) {
 				case 'top':
-					if (!isLengthGreaterTwo || isVertical) {
-						_this.setState({
-							data: [
-								..._this.state.data,
-								{
-									x: tail.x,
-									y: tail.y + _this.state.height
-								}
-							],
-							isShow: false
-						});
+					if (!isGreaterThree || isVertical) {
+						foodTail = {
+							x: tail.x,
+							y: tail.y + _this.state.height
+						};
 					}
 					break;
 				case 'down':
-					if (!isLengthGreaterTwo || isVertical) {
-						_this.setState({
-							data: [
-								..._this.state.data,
-								{
-									x: tail.x,
-									y: tail.y - _this.state.height
-								}
-							],
-							isShow: false
-						});
+					if (!isGreaterThree || isVertical) {
+						foodTail = {
+							x: tail.x,
+							y: tail.y - _this.state.height
+						};
 					}
-
 					break;
 				case 'left':
-					if (!isLengthGreaterTwo || isHorizontal) {
-						_this.setState({
-							data: [
-								..._this.state.data,
-								{
-									x: tail.x + _this.state.width,
-									y: tail.y
-								}
-							],
-							isShow: false
-						});
+					if (!isGreaterThree || isHorizontal) {
+						foodTail = {
+							x: tail.x + _this.state.width,
+							y: tail.y
+						};
 					}
-
 					break;
 				case 'right':
-					if (!isLengthGreaterTwo || isHorizontal) {
-						_this.setState({
-							data: [
-								..._this.state.data,
-								{
-									x: tail.x - _this.state.width,
-									y: tail.y
-								}
-							],
-							isShow: false
-						});
+					if (!isGreaterThree || isHorizontal) {
+						foodTail = {
+							x: tail.x - _this.state.width,
+							y: tail.y
+						};
 					}
 					break;
 			}
@@ -182,57 +152,41 @@ class Game extends Component {
 			switch (_this.state.direction) {
 				case 'top':
 				case 'down':
-					if (isHorizontal) {
-						if (isTailXAxisGreater) {
-							_this.setState({
-								data: [
-									..._this.state.data,
-									{
-										x: tail.x + _this.state.width,
-										y: tail.y
-									}
-								]
-							});
-						} else {
-							_this.setState({
-								data: [
-									..._this.state.data,
-									{
-										x: tail.x - _this.state.width,
-										y: tail.y
-									}
-								]
-							});
+					if (isGreaterThree) {
+						if (tail.x - lastSecond.x > 0) {
+							foodTail = {
+								x: tail.x + _this.state.width,
+								y: tail.y
+							};
+						} else if (tail.x - lastSecond.x < 0) {
+							foodTail = {
+								x: tail.x - _this.state.width,
+								y: tail.y
+							};
 						}
 					}
 					break;
 				case 'right':
 				case 'left':
-					if (isVertical) {
-						if (isTailYAxisGreater) {
-							_this.setState({
-								data: [
-									..._this.state.data,
-									{
-										x: tail.x,
-										y: tail.y + _this.state.height
-									}
-								]
-							});
-						} else {
-							_this.setState({
-								data: [
-									..._this.state.data,
-									{
-										x: tail.x,
-										y: tail.y - _this.state.height
-									}
-								]
-							});
+					if (isGreaterThree) {
+						if (tail.y - lastSecond.y > 0) {
+							foodTail = {
+								x: tail.x,
+								y: tail.y + _this.state.height
+							};
+						} else if (tail.y - lastSecond.y < 0) {
+							foodTail = {
+								x: tail.x,
+								y: tail.y - _this.state.height
+							};
 						}
 					}
 					break;
 			}
+
+			_this.setState({
+				data: [ ..._this.state.data, foodTail ]
+			});
 		}
 	}
 
@@ -367,7 +321,19 @@ class Game extends Component {
 			let positionX = x * _this.state.width;
 			let positionY = y * _this.state.height;
 
-			while (_this.state.data.indexOf(positionX) !== -1 && _this.state.data.indexOf(positionY) !== -1) {
+			// console.log(`[${positionX},${positionY}]`);
+
+			// console.log(
+			// 	_this.state.data.every((element, index) => {
+			// 		return !(element.x !== positionX && element.y !== positionY);
+			// 	})
+			// );
+
+			while (
+				_this.state.data.every((element, index) => {
+					return !(element.x !== positionX && element.y !== positionY);
+				})
+			) {
 				x = Math.floor(Math.random() * Math.floor(maxX));
 				y = Math.floor(Math.random() * Math.floor(maxY));
 				positionX = x * _this.state.width;
