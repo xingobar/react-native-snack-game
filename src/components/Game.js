@@ -41,27 +41,69 @@ class Game extends Component {
 				let { x0, y0, vx, vy, dx, dy } = gestureState;
 				let _this = this;
 
+				let diffX, diffY;
+				let isGreaterTwo = false;
+				let head, second;
+				if (_this.state.data.length >= 2) {
+					head = _this.state.data[0];
+					second = _this.state.data[1];
+
+					diffX = head.x - second.x;
+					diffY = head.y - second.y;
+					isGreaterTwo = true;
+				}
+
 				if (Math.abs(dx) >= 100) {
 					if (dx > 100) {
-						_this.setState({ direction: 'right' });
+						if (!isGreaterTwo) {
+							_this.setState({ direction: 'right' });
+						} else {
+							if (diffX > 0 || diffY > 0 || diffY < 0) {
+								_this.setState({ direction: 'right' });
+							}
+						}
 					}
 
 					if (dx <= -100) {
-						_this.setState({
-							direction: 'left'
-						});
+						if (!isGreaterTwo) {
+							_this.setState({
+								direction: 'left'
+							});
+						} else {
+							if (diffX < 0 || diffY > 0 || diffY < 0) {
+								_this.setState({
+									direction: 'left'
+								});
+							}
+						}
 					}
 				} else if (Math.abs(dy) >= 100) {
 					if (dy > 100) {
-						_this.setState({
-							direction: 'down'
-						});
+						if (!isGreaterTwo) {
+							_this.setState({
+								direction: 'down'
+							});
+						} else {
+							if (diffX > 0 || diffX < 0 || diffY > 0) {
+								_this.setState({
+									direction: 'down'
+								});
+							}
+						}
 					}
 
 					if (dy <= -100) {
-						_this.setState({
-							direction: 'top'
-						});
+						if (!isGreaterTwo) {
+							_this.setState({
+								direction: 'top'
+							});
+						} else {
+							if (diffX > 0 || diffX < 0 || diffY < 0) {
+								_this.setState({
+									direction: 'top'
+								});
+							}
+						}
 					}
 				}
 			}
